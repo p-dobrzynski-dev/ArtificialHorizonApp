@@ -27,35 +27,41 @@ class ViewController: UIViewController {
         setOffsetButton.styleButton()
         resetOffsetButton.styleButton()
         
+        view.backgroundColor = UIColor(named: Contstans.Colors.backgroundColor)
+        
     }
-    
     
     override func viewDidLoad() {
         
         super.viewDidLoad()
-        view.backgroundColor = UIColor(named: Contstans.Colors.backgroundColor)
         
         // Setup artificial horizon view
-        
-        
-        
         startGyrosope()
         startUpdatePitchAndRoll()
     }
     
-    @IBAction func setOffsetClicked(_ sender: UIButton) {
-        artificialHorizonView.applyOffset()
+    @IBAction func buttonClicked(_ sender: UIButton) {
+        switch sender {
+        case setOffsetButton:
+            artificialHorizonView.applyOffset()
+        case resetOffsetButton:
+            artificialHorizonView.resetOffset()
+        default:
+            return
+        }
+        sender.backgroundColor = UIColor.init(named: Contstans.Colors.insideFrameColor)
     }
     
-    @IBAction func resetOffsetButton(_ sender: UIButton) {
-        artificialHorizonView.resetOffset()
+    @IBAction func buttonHold(_ sender: UIButton) {
+        sender.backgroundColor = UIColor.init(named: Contstans.Colors.outsideFrameColor)
     }
+    
     
     private func startUpdatePitchAndRoll(){
-        var timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { (timer) in
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { (timer) in
             DispatchQueue.main.async {
-                self.pitchLabel.text = String(format: "Pitch: \n%.2f", self.artificialHorizonView.getPitch())
-                self.rollLabel.text = String(format: "Roll: \n%.2f", self.artificialHorizonView.getRoll())
+                self.pitchLabel.text = String(format: "Pitch: \n%.2f", self.artificialHorizonView.pitch.toDegrees()-self.artificialHorizonView.pitchOffset.toDegrees())
+                self.rollLabel.text = String(format: "Roll: \n%.2f", self.artificialHorizonView.roll.toDegrees()-self.artificialHorizonView.rollOffset.toDegrees())
             }
         }
     }
@@ -69,8 +75,8 @@ class ViewController: UIViewController {
                     let pitchValue = atan2(-correctData.gravity.z, -correctData.gravity.y)
                     let rollValue = atan2(-correctData.gravity.x, -correctData.gravity.y)
                     DispatchQueue.main.async {
-                        self.artificialHorizonView.setPitch(newPitchValue: pitchValue)
-                        self.artificialHorizonView.setRoll(newRollValue: rollValue)
+                        self.artificialHorizonView.pitch = CGFloat(pitchValue)
+                        self.artificialHorizonView.roll = CGFloat(rollValue)
                     }
                 }
             }
@@ -83,6 +89,7 @@ extension Double{
         return Float(self * 180.0 / Double.pi)
     }
 }
+
 
 extension UILabel{
     func styleLabel(){

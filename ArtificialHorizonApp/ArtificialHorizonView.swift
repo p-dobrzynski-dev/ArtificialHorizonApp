@@ -10,12 +10,22 @@ import UIKit
 import Foundation
 
 
-class ArtificialHorizonView: UIView {
+@IBDesignable class ArtificialHorizonView: UIView {
     
-    private var pitch: CGFloat = 0.0
-    private var roll: CGFloat = 0.0
-    private var pitchOffset:CGFloat = 0.0
-    private var rollOffset:CGFloat = 0.0
+    public var pitch: CGFloat = 0.0 {
+        didSet{
+            setNeedsDisplay()
+        }
+    }
+    
+    public var roll: CGFloat = 0.0{
+        didSet{
+            setNeedsDisplay()
+        }
+    }
+    
+    public var pitchOffset:CGFloat = 0.0
+    public var rollOffset:CGFloat = 0.0
     
     
     // Only override draw() if you perform custom drawing.
@@ -25,25 +35,32 @@ class ArtificialHorizonView: UIView {
         drawArtificalHorizon()
     }
     
-    
-    
     private func drawArtificalHorizon(){
         
         layer.sublayers = nil
+        
         // MARK: - Border layouts
         let insideBorderWidth = bounds.width / 15
+        
         let insideBorderCirclePath = UIBezierPath(arcCenter: CGPoint(x: bounds.midX, y: bounds.midY),
                                                   radius: bounds.width/2 - insideBorderWidth/2,
                                                   startAngle: 0,
                                                   endAngle: 360,
                                                   clockwise: true)
         
-        let insideBorderLayer = CAShapeLayer()
-        insideBorderLayer.path = insideBorderCirclePath.cgPath
-        insideBorderLayer.fillColor = UIColor.clear.cgColor
-        insideBorderLayer.strokeColor = UIColor(named: Contstans.Colors.insideFrameColor)?.cgColor
-        insideBorderLayer.lineWidth = insideBorderWidth
-        layer.addSublayer(insideBorderLayer)
+        let insideBorderLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.path = insideBorderCirclePath.cgPath
+            shapeLayer.fillColor = UIColor.clear.cgColor
+            shapeLayer.strokeColor = UIColor(named: Contstans.Colors.insideFrameColor)?.cgColor
+            shapeLayer.lineWidth = insideBorderWidth
+            shapeLayer.shadowColor = UIColor.black.cgColor
+            shapeLayer.shadowRadius = 5
+            shapeLayer.shadowOffset = .zero
+            shapeLayer.shadowOpacity = 0.75
+            return shapeLayer
+        }()
+        
         
         let outsideBorderWidth = bounds.width/50
         
@@ -53,56 +70,76 @@ class ArtificialHorizonView: UIView {
                                                    endAngle: 360,
                                                    clockwise: true)
         
-        let outsideBorderLayer = CAShapeLayer()
-        outsideBorderLayer.path = outsideBorderCirclePath.cgPath
-        outsideBorderLayer.fillColor = UIColor.clear.cgColor
-        outsideBorderLayer.strokeColor = UIColor(named: Contstans.Colors.outsideFrameColor)?.cgColor
-        outsideBorderLayer.lineWidth = outsideBorderWidth
+        let outsideBorderLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.path = outsideBorderCirclePath.cgPath
+            shapeLayer.fillColor = UIColor.clear.cgColor
+            shapeLayer.strokeColor = UIColor(named: Contstans.Colors.outsideFrameColor)?.cgColor
+            shapeLayer.lineWidth = outsideBorderWidth
+            return shapeLayer
+        }()
         
-        layer.addSublayer(outsideBorderLayer)
+        
         
         
         // MARK: - Outside Horizon layouts
         
+        // Top
         let topOutsideHorizonPath = UIBezierPath(arcCenter: CGPoint(x: bounds.midX, y: bounds.midY),
                                                  radius: bounds.width/2 - insideBorderWidth,
-                                                 startAngle: CGFloat(180+roll-rollOffset).toRadians(),
-                                                 endAngle: CGFloat(0+roll-rollOffset).toRadians(),
+                                                 startAngle: CGFloat.pi+roll-rollOffset,
+                                                 endAngle: roll-rollOffset,
                                                  clockwise: true)
         
-        let topOutsideHorizonLayer = CAShapeLayer()
-        topOutsideHorizonLayer.path = topOutsideHorizonPath.cgPath
-        topOutsideHorizonLayer.fillColor = UIColor(named: Contstans.Colors.topOutsideHorizonColor)?.cgColor
+        let topOutsideHorizonLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.path = topOutsideHorizonPath.cgPath
+            shapeLayer.fillColor = UIColor(named: Contstans.Colors.topOutsideHorizonColor)?.cgColor
+            return shapeLayer
+        }()
+        
         layer.addSublayer(topOutsideHorizonLayer)
         
+        //Bottom
         let bottomOutsideHorizonPath = UIBezierPath(arcCenter: CGPoint(x: bounds.midX, y: bounds.midY),
                                                     radius: bounds.width/2 - insideBorderWidth,
-                                                    startAngle: CGFloat(0+roll-rollOffset).toRadians(),
-                                                    endAngle: CGFloat(180+roll-rollOffset).toRadians(),
+                                                    startAngle: roll-rollOffset,
+                                                    endAngle: CGFloat.pi+roll-rollOffset,
                                                     clockwise: true)
         
-        let bottomOutsideHorizonLayer = CAShapeLayer()
-        bottomOutsideHorizonLayer.path = bottomOutsideHorizonPath.cgPath
-        bottomOutsideHorizonLayer.fillColor = UIColor(named: Contstans.Colors.bottomOutsideHorizonColor)?.cgColor
+        let bottomOutsideHorizonLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.path = bottomOutsideHorizonPath.cgPath
+            shapeLayer.fillColor = UIColor(named: Contstans.Colors.bottomOutsideHorizonColor)?.cgColor
+            return shapeLayer
+        }()
+        
+        
         layer.addSublayer(bottomOutsideHorizonLayer)
         
-        let outsideHorizonLinePath = UIBezierPath()
+        // Line
+        let outsideHorizonLinePath: UIBezierPath = {
+            let path = UIBezierPath()
+            let startLinePoint = CGPoint(x: bounds.midX - cos(roll-rollOffset) * (bounds.width/2 - insideBorderWidth), y: bounds.midY - sin(roll-rollOffset)*(bounds.width/2 - insideBorderWidth))
+            path.move(to: startLinePoint)
+            let lineEndPoint = CGPoint(x: bounds.midX + cos(roll-rollOffset) * (bounds.width/2 - insideBorderWidth), y: bounds.midY + sin(roll-rollOffset)*(bounds.width/2 - insideBorderWidth))
+            path.addLine(to: lineEndPoint)
+            path.close()
+            return path
+        }()
         
-        let startLinePoint = CGPoint(x: bounds.midX - cos((roll-rollOffset).toRadians()) * (bounds.width/2 - insideBorderWidth), y: bounds.midY - sin((roll-rollOffset).toRadians())*(bounds.width/2 - insideBorderWidth))
-        outsideHorizonLinePath.move(to: startLinePoint)
-        let lineEndPoint = CGPoint(x: bounds.midX + cos((roll-rollOffset).toRadians()) * (bounds.width/2 - insideBorderWidth), y: bounds.midY + sin((roll-rollOffset).toRadians())*(bounds.width/2 - insideBorderWidth))
-        outsideHorizonLinePath.addLine(to: lineEndPoint)
-        outsideHorizonLinePath.close()
         
-        let outsideHorizonLineLayer = CAShapeLayer()
-        outsideHorizonLineLayer.path = outsideHorizonLinePath.cgPath
-        outsideHorizonLineLayer.strokeColor = UIColor(named: Contstans.Colors.whiteLineColor)?.cgColor
-        outsideHorizonLineLayer.lineWidth = bounds.width/100
+        
+        let outsideHorizonLineLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.path = outsideHorizonLinePath.cgPath
+            shapeLayer.strokeColor = UIColor(named: Contstans.Colors.whiteLineColor)?.cgColor
+            shapeLayer.lineWidth = bounds.width/100
+            return shapeLayer
+        }()
+        
         
         layer.addSublayer(outsideHorizonLineLayer)
-        
-        
-        
         
         // MARK: - Inside Horizon layouts
         
@@ -110,97 +147,150 @@ class ArtificialHorizonView: UIView {
         
         
         // Top
-        let topInsideHorizonLayer = CAShapeLayer()
-        topInsideHorizonLayer.frame = insideHorizonFrame
         
         let topInsideHorizonPath = UIBezierPath(arcCenter: CGPoint(x: insideHorizonFrame.width/2, y: insideHorizonFrame.width/2),
                                                 radius: insideHorizonFrame.width/2,
-                                                startAngle: CGFloat(180+pitch-pitchOffset).toRadians(),
-                                                endAngle: CGFloat(0-(pitch-pitchOffset)).toRadians(),
+                                                startAngle: CGFloat.pi+pitch-pitchOffset,
+                                                endAngle: -(pitch-pitchOffset),
                                                 clockwise: true)
-        
-        topInsideHorizonLayer.path = topInsideHorizonPath.cgPath
-        topInsideHorizonLayer.transform = CATransform3DRotate(topInsideHorizonLayer.transform, (roll-rollOffset).toRadians(), 0.0, 0.0, 1.0)
-        topInsideHorizonLayer.fillColor = UIColor(named: Contstans.Colors.topInsideHorizonColor)?.cgColor
-        
+        let topInsideHorizonLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = insideHorizonFrame
+            shapeLayer.path = topInsideHorizonPath.cgPath
+            shapeLayer.transform = CATransform3DRotate(shapeLayer.transform, roll-rollOffset, 0.0, 0.0, 1.0)
+            shapeLayer.fillColor = UIColor(named: Contstans.Colors.topInsideHorizonColor)?.cgColor
+            return shapeLayer
+        }()
         
         // Bottom
         let bottomInsideHorizonLayer = CAShapeLayer()
         bottomInsideHorizonLayer.frame = insideHorizonFrame
+        
         let bottomInsideHorizonPath = UIBezierPath(arcCenter: CGPoint(x: insideHorizonFrame.width/2, y: insideHorizonFrame.width/2),
                                                    radius: insideHorizonFrame.width/2,
-                                                   startAngle: CGFloat(0-(pitch-pitchOffset)).toRadians(),
-                                                   endAngle: CGFloat(180+pitch-pitchOffset).toRadians(),
+                                                   startAngle: -(pitch-pitchOffset),
+                                                   endAngle: CGFloat.pi+pitch-pitchOffset,
                                                    clockwise: true)
         
         bottomInsideHorizonLayer.path = bottomInsideHorizonPath.cgPath
-        bottomInsideHorizonLayer.transform = CATransform3DRotate(bottomInsideHorizonLayer.transform, (roll-rollOffset).toRadians(), 0.0, 0.0, 1.0)
+        bottomInsideHorizonLayer.transform = CATransform3DRotate(bottomInsideHorizonLayer.transform, roll-rollOffset, 0.0, 0.0, 1.0)
         bottomInsideHorizonLayer.fillColor = UIColor(named: Contstans.Colors.bottomInsideHorizonColor)?.cgColor
         
         
         
         // Line
-        let insideHorizonLineLayer = CAShapeLayer()
-        insideHorizonLineLayer.frame = insideHorizonFrame
-        insideHorizonLineLayer.bounds = insideHorizonFrame
-        let insideHorizonLinePath = UIBezierPath()
-        let startInsideLinePoint = CGPoint(x:insideHorizonFrame.midX - cos((pitch-pitchOffset).toRadians())*insideHorizonFrame.width/2 - insideHorizonFrame.width/2,y:insideHorizonFrame.midY - sin((pitch-pitchOffset).toRadians())*insideHorizonFrame.width/2)
-        insideHorizonLinePath.move(to: startInsideLinePoint)
-        let endInsideLinePoint = CGPoint(x:insideHorizonFrame.midX + cos(-(pitch+pitchOffset).toRadians())*insideHorizonFrame.width/2 + insideHorizonFrame.width/2,y:insideHorizonFrame.midY + sin(-(pitch+pitchOffset).toRadians())*insideHorizonFrame.width/2)
-        insideHorizonLinePath.addLine(to: endInsideLinePoint)
-        insideHorizonLinePath.close()
+        let insideHorizonLinePath: UIBezierPath = {
+            let path = UIBezierPath()
+            var angle = pitch-pitchOffset
+            if (angle > CGFloat.pi/2 || angle < -CGFloat.pi/2){
+                angle = CGFloat.pi - angle
+            }
+            
+            let startPoint = CGPoint(x:insideHorizonFrame.midX - cos(angle)*insideHorizonFrame.width/2 - insideHorizonFrame.width/2,y:insideHorizonFrame.midY - sin(angle)*insideHorizonFrame.width/2)
+            path.move(to: startPoint)
+            let endPoint = CGPoint(x:insideHorizonFrame.midX + cos(-angle)*insideHorizonFrame.width/2 + insideHorizonFrame.width/2,y:insideHorizonFrame.midY + sin(-angle)*insideHorizonFrame.width/2)
+            path.addLine(to: endPoint)
+            path.close()
+            return path
+        }()
         
-        insideHorizonLineLayer.path = insideHorizonLinePath.cgPath
-        insideHorizonLineLayer.strokeColor = UIColor(named: Contstans.Colors.whiteLineColor)?.cgColor
-        insideHorizonLineLayer.transform = CATransform3DRotate(insideHorizonLineLayer.transform, (roll-rollOffset).toRadians(), 0.0, 0.0, 1.0)
-        insideHorizonLineLayer.lineWidth = bounds.width/350
-        
+        let insideHorizonLineLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = insideHorizonFrame
+            shapeLayer.bounds = insideHorizonFrame
+            shapeLayer.path = insideHorizonLinePath.cgPath
+            shapeLayer.strokeColor = UIColor(named: Contstans.Colors.whiteLineColor)?.cgColor
+            shapeLayer.transform = CATransform3DRotate(shapeLayer.transform, roll-rollOffset, 0.0, 0.0, 1.0)
+            shapeLayer.lineWidth = bounds.width/350
+            return shapeLayer
+        }()
         
         //Mask for lines
-        let maskLayer = CAShapeLayer()
-        maskLayer.frame = insideHorizonFrame
-        
         let maskPath = UIBezierPath(arcCenter: CGPoint(x: insideHorizonFrame.width/2, y: insideHorizonFrame.width/2),
                                     radius: insideHorizonFrame.width/2 - 1,
                                     startAngle: 0,
                                     endAngle: 360,
                                     clockwise: true)
-        maskLayer.path = maskPath.cgPath
+        
+        
+        let maskLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = insideHorizonFrame
+            shapeLayer.path = maskPath.cgPath
+            return shapeLayer
+        }()
+        
         insideHorizonLineLayer.mask = maskLayer
         
+        let shadowLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = insideHorizonFrame
+            shapeLayer.path = maskPath.reversing().cgPath
+            shapeLayer.shadowColor = UIColor.black.cgColor
+            shapeLayer.shadowRadius = 5
+            shapeLayer.shadowOffset = .zero
+            shapeLayer.shadowOpacity = 0.75
+            return shapeLayer
+        }()
         
-        let shadowLayer = CAShapeLayer()
-        shadowLayer.frame = insideHorizonFrame
-        shadowLayer.path = maskPath.reversing().cgPath
-        shadowLayer.shadowColor = UIColor.black.cgColor
-        shadowLayer.shadowRadius = 5
-        shadowLayer.shadowOffset = .zero
-        shadowLayer.shadowOpacity = 1
+        let viewFinderPath: UIBezierPath = {
+            let path = UIBezierPath()
+            let curveRadius = insideHorizonFrame.width / 10
+            path.move(to: CGPoint(x: insideHorizonFrame.minX+2*curveRadius, y: insideHorizonFrame.midY))
+            path.addLine(to: CGPoint(x: insideHorizonFrame.midX-curveRadius, y: insideHorizonFrame.midY))
+            path.addArc(withCenter: CGPoint(x: insideHorizonFrame.midX, y: insideHorizonFrame.midY), radius: curveRadius, startAngle: CGFloat.pi, endAngle: 0, clockwise: false)
+            path.addLine(to: CGPoint(x: insideHorizonFrame.maxX-2*curveRadius, y: insideHorizonFrame.midY))
+            return path
+        }()
         
+        let viewFinderShapeLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = insideHorizonFrame
+            shapeLayer.bounds = insideHorizonFrame
+            shapeLayer.path = viewFinderPath.cgPath
+            shapeLayer.strokeColor = UIColor(red: 0.90, green: 0.49, blue: 0.13, alpha: 1.00).cgColor
+            shapeLayer.fillColor = UIColor.clear.cgColor
+            shapeLayer.lineWidth = bounds.width/50
+            shapeLayer.lineCap = CAShapeLayerLineCap.round
+            shapeLayer.shadowRadius = 3
+            shapeLayer.shadowOffset = .zero
+            shapeLayer.shadowOpacity = 0.5
+            shapeLayer.shadowColor = UIColor.black.cgColor
+            return shapeLayer
+        }()
+        
+        let centerDotPath: UIBezierPath = {
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: insideHorizonFrame.midX , y: insideHorizonFrame.midY))
+            path.addLine(to: CGPoint(x: insideHorizonFrame.midX , y: insideHorizonFrame.midY))
+            return path
+        }()
+        
+        let centerDotShapeLayer: CAShapeLayer = {
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = insideHorizonFrame
+            shapeLayer.bounds = insideHorizonFrame
+            shapeLayer.path = centerDotPath.cgPath
+            shapeLayer.strokeColor = UIColor(red: 0.90, green: 0.49, blue: 0.13, alpha: 1.00).cgColor
+            shapeLayer.fillColor = UIColor.clear.cgColor
+            shapeLayer.lineWidth = bounds.width/50
+            shapeLayer.lineCap = CAShapeLayerLineCap.round
+            shapeLayer.shadowRadius = 3
+            shapeLayer.shadowOffset = .zero
+            shapeLayer.shadowOpacity = 0.5
+            shapeLayer.shadowColor = UIColor.black.cgColor
+            return shapeLayer
+        }()
+        
+        // Adding sublayers
         layer.addSublayer(shadowLayer)
         layer.addSublayer(bottomInsideHorizonLayer)
         layer.addSublayer(topInsideHorizonLayer)
         layer.addSublayer(insideHorizonLineLayer)
-        
-        
-    }
-    
-    func setPitch(newPitchValue pitchValue: Double){
-        pitch = CGFloat(pitchValue).toDegrees()
-        setNeedsDisplay()
-    }
-    
-    func getPitch() -> Double {
-        return Double(pitch)
-    }
-    
-    func setRoll(newRollValue rollValue: Double){
-        roll = CGFloat(rollValue).toDegrees()
-        setNeedsDisplay()
-    }
-    
-    func getRoll() -> Double {
-        return Double(roll)
+        layer.addSublayer(insideBorderLayer)
+        layer.addSublayer(outsideBorderLayer)
+        layer.addSublayer(viewFinderShapeLayer)
+        layer.addSublayer(centerDotShapeLayer)
     }
     
     func applyOffset(){
