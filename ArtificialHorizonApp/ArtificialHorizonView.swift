@@ -58,6 +58,7 @@ import Foundation
             shapeLayer.shadowRadius = 5
             shapeLayer.shadowOffset = .zero
             shapeLayer.shadowOpacity = 0.75
+            shapeLayer.allowsEdgeAntialiasing = true
             return shapeLayer
         }()
         
@@ -76,6 +77,8 @@ import Foundation
             shapeLayer.fillColor = UIColor.clear.cgColor
             shapeLayer.strokeColor = UIColor(named: Contstans.Colors.outsideFrameColor)?.cgColor
             shapeLayer.lineWidth = outsideBorderWidth
+            shapeLayer.allowsEdgeAntialiasing = true
+
             return shapeLayer
         }()
         

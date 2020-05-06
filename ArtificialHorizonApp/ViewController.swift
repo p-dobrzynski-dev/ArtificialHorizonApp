@@ -105,5 +105,10 @@ extension UIButton{
         self.backgroundColor = UIColor(named: Contstans.Colors.insideFrameColor)
         self.layer.cornerRadius = self.frame.height/2
         self.layer.masksToBounds = true
+        self.layer.shadowColor = UIColor.gray.cgColor
+        self.layer.shadowOpacity = 0.75
+        self.layer.shadowOffset = .zero
+        self.layer.shadowRadius = 5
+        self.layer.masksToBounds = false
     }
 }
